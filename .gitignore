@@ -3,3 +3,9 @@
 /DumpParser/output
 /graphvisualizer/.next
 /graphvisualizer/node_modules
+/graphvisualizer/public/1mil
+/graphvisualizer/public/full
+/graphvisualizer/public/FixedNodes.csv
+/graphvisualizer/public/Nodes.csv
+/graphvisualizer/public/Links.csv
+/DumpParser/dump
