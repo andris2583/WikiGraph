@@ -14,8 +14,7 @@ export const getStaticProps: GetStaticProps = async () => {
   const fixedNodesFilePath = path.join(
     process.cwd(),
     'public',
-    'full',
-    'Nodes.csv'
+    'NodeCoordinates.csv'
   );
 
   // Read the file contents
@@ -55,23 +54,24 @@ export default function Home({
   }, []);
 
   return (
-    <Cosmograph
-      nodes={nodes}
-      links={links}
-      nodeLabelAccessor={(node: Node) => node.label}
-      simulationRepulsion={0.9}
-      simulationLinkSpring={0.05}
-      simulationGravity={0.1}
-      spaceSize={8192}
-      showFPSMonitor={true}
-      randomSeed={Math.random()}
-    />
     // <Cosmograph
-    //   nodes={fixedNodes}
+    //   nodes={nodes}
+    //   links={links}
     //   nodeLabelAccessor={(node: Node) => node.label}
+    //   // simulationRepulsion={0.7}
+    //   // simulationLinkSpring={0.05}
+    //   // simulationGravity={0.1}
     //   spaceSize={8192}
     //   showFPSMonitor={true}
-    //   nodeSize={(node) => Math.max(4, (node.out / maxOut) * 4 * 20)}
+    //   randomSeed={Math.random()}
     // />
+    <Cosmograph
+      nodes={fixedNodes}
+      nodeLabelAccessor={(node: Node) => node.label}
+      spaceSize={8192}
+      showFPSMonitor={true}
+      nodeSize={(node) => Math.max(40, (node.out / maxOut) * 20 * 10)}
+      // nodeSize={1}
+    />
   );
 }

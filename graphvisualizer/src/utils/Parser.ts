@@ -53,8 +53,8 @@ export const parseFixedNodes = (fileContent: string): FixedNode[] => {
           id: row.id,
           label: row.title,
           out: row.out ?? 0,
-          x: Math.floor(Math.random() * 1000000),
-          y: Math.floor(Math.random() * 1000000),
+          x: row.x * 10000,
+          y: row.y * 10000,
         });
       });
     },
