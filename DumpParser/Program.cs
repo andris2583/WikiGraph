@@ -4,11 +4,11 @@
   {
     switch (args[0])
     {
-      case "parse":
-        SQLParser.ParseDump(int.Parse(args[1]));
+      case "parse_graph":
+        SQLParser.ParseGraph();
         break;
-      case "calccoords":
-        // ForceDirectedGraph.Calculate();
+      case "parse_categories":
+        SQLParser.ParseCategoryVectors();
         break;
       default:
         break;

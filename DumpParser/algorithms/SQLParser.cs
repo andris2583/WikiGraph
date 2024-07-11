@@ -3,7 +3,7 @@ using Data;
 
 public static class SQLParser
 {
-  public static void ParseDump(int writeLimit)
+  public static void ParseGraph()
   {
     string connectionString = "Server=localhost;Port=3306;Database=wiki;uid=root;pwd=rootpassword;Connection Timeout=60";
     long startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
@@ -28,14 +28,14 @@ public static class SQLParser
     Directory.CreateDirectory(outputFolder);
 
     // Write data to CSV file
-    ProcessData(pageLinks, linkTargets, pages, startTime, writeLimit);
+    ProcessData(pageLinks, linkTargets, pages, startTime);
 
     Console.WriteLine("Generation done");
     Console.WriteLine(Util.GetTimeElapsed(startTime) + " ms elapsed!");
 
   }
 
-  public static void ProcessData(List<PageLink> pageLinks, List<LinkTarget> linkTargets, List<Page> pages, long startTime, int writeLimit)
+  public static void ProcessData(List<PageLink> pageLinks, List<LinkTarget> linkTargets, List<Page> pages, long startTime)
   {
     var csv = new StringBuilder();
     string[] names = new string[1200000];
@@ -69,11 +69,7 @@ public static class SQLParser
 
             if (entryCount % 500 == 0)
             {
-              Console.WriteLine($"{entryCount} / {writeLimit} lines written in {Util.GetTimeElapsed(startTime)} ms! Pagelink: {pageLinks.IndexOf(link)} / {pageLinks.Count()}");
-              if (entryCount >= writeLimit)
-              {
-                state.Stop();
-              }
+              Console.WriteLine($"{entryCount} lines written in {Util.GetTimeElapsed(startTime)} ms! Pagelink: {pageLinks.IndexOf(link)} / {pageLinks.Count()}");
             }
           }
         }
@@ -103,4 +99,37 @@ public static class SQLParser
     File.WriteAllText(Path.Combine("output", "Nodes.csv"), csv.ToString());
   }
 
+  public static void ParseCategoryVectors()
+  {
+    string connectionString = "Server=localhost;Port=3306;Database=wiki;uid=root;pwd=rootpassword;Connection Timeout=60";
+    var categories = Reader.LoadCategories("Server=localhost;Port=3306;Database=wiki;uid=root;pwd=rootpassword;Connection Timeout=60");
+    var categoryLinks = Reader.LoadCategoryLinks("Server=localhost;Port=3306;Database=wiki;uid=root;pwd=rootpassword;Connection Timeout=60");
+    long startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+    List<PageLink> pageLinks = Reader.LoadPageLinks(connectionString);
+    Util.ShuffleList(pageLinks);
+    Console.WriteLine($"{pageLinks.Count} PageLinks loaded in {Util.GetTimeElapsed(startTime)} ms");
+    startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+
+    List<LinkTarget> linkTargets = Reader.LoadLinkTargets(connectionString);
+    Console.WriteLine($"{linkTargets.Count} LinkTargets loaded in {Util.GetTimeElapsed(startTime)} ms");
+    startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+
+    List<Page> pages = Reader.LoadPages(connectionString);
+    Console.WriteLine($"{pages.Count} Pages loaded in {Util.GetTimeElapsed(startTime)} ms");
+    startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+
+    startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+
+    string outputFolder = "output";
+
+    // Ensure the output directory exists
+    Directory.CreateDirectory(outputFolder);
+
+    // Write data to CSV file
+    ProcessData(pageLinks, linkTargets, pages, startTime);
+
+    Console.WriteLine("Generation done");
+    Console.WriteLine(Util.GetTimeElapsed(startTime) + " ms elapsed!");
+
+  }
 }

@@ -96,4 +96,56 @@ public static class Reader
     return pages;
   }
 
+  public static List<string> LoadCategories(string connectionString)
+  {
+    List<string> categories = new List<string>();
+
+    using (MySqlConnection conn = new MySqlConnection(connectionString))
+    {
+      conn.Open();
+
+      string query = $"select DISTINCT(cl_to) as category_name from categorylinks c WHERE c.cl_type = 'page' AND cl_to NOT IN (select page_title from page p join (select cl_from from categorylinks c WHERE c.cl_to ='Hidden_categories') as cat on cat.cl_from = page_id) GROUP BY cl_to HAVING COUNT(cl_to) > 50;";
+
+      MySqlCommand cmd = new MySqlCommand(query, conn);
+
+      using (MySqlDataReader reader = cmd.ExecuteReader())
+      {
+        while (reader.Read())
+        {
+          categories.Add(Encoding.UTF8.GetString((byte[])reader["category_name"]));
+        }
+      }
+    }
+
+    return categories;
+  }
+
+  public static List<CategoryLink> LoadCategoryLinks(string connectionString)
+  {
+    List<CategoryLink> categoryLinks = new List<CategoryLink>();
+
+    using (MySqlConnection conn = new MySqlConnection(connectionString))
+    {
+      conn.Open();
+
+      string query = $"select cl_from, cl_to  from categorylinks c WHERE c.cl_type = 'page' AND cl_to IN (select DISTINCT(cl_to) as category_name from categorylinks c WHERE c.cl_type = 'page' AND cl_to NOT IN (select page_title from page p join (select cl_from from categorylinks c WHERE c.cl_to ='Hidden_categories') as cat on cat.cl_from = page_id) GROUP BY cl_to HAVING COUNT(cl_to) > 50);";
+
+      MySqlCommand cmd = new MySqlCommand(query, conn);
+
+      using (MySqlDataReader reader = cmd.ExecuteReader())
+      {
+        while (reader.Read())
+        {
+          categoryLinks.Add(new CategoryLink
+          {
+            cl_from = reader.GetUInt32("cl_from"),
+            cl_to = Encoding.UTF8.GetString((byte[])reader["cl_to"])
+          });
+        }
+      }
+    }
+
+    return categoryLinks;
+  }
+
 }
