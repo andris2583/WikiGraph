@@ -4,4 +4,5 @@ export interface FixedNode {
   out: number;
   x: number;
   y: number;
+  cluster: number;
 }

@@ -1,5 +1,10 @@
+using System.Collections.Concurrent;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using Data;
+using Microsoft.ML;
+using Microsoft.ML.Data;
+using Microsoft.ML.Transforms;
 
 public static class SQLParser
 {
@@ -27,15 +32,14 @@ public static class SQLParser
     // Ensure the output directory exists
     Directory.CreateDirectory(outputFolder);
 
-    // Write data to CSV file
-    ProcessData(pageLinks, linkTargets, pages, startTime);
+    ProcessGraphData(pageLinks, linkTargets, pages, startTime);
 
     Console.WriteLine("Generation done");
     Console.WriteLine(Util.GetTimeElapsed(startTime) + " ms elapsed!");
 
   }
 
-  public static void ProcessData(List<PageLink> pageLinks, List<LinkTarget> linkTargets, List<Page> pages, long startTime)
+  public static void ProcessGraphData(List<PageLink> pageLinks, List<LinkTarget> linkTargets, List<Page> pages, long startTime)
   {
     var csv = new StringBuilder();
     string[] names = new string[1200000];
@@ -85,13 +89,14 @@ public static class SQLParser
     csv.Clear();
     csv.AppendLine("id;title;out");
 
-    Parallel.For(0, names.Length, new ParallelOptions { MaxDegreeOfParallelism = 12 }, i =>
+    Parallel.For(0, pages.Count, new ParallelOptions { MaxDegreeOfParallelism = 12 }, i =>
     {
-      if (names[i] != null)
+      var page = pages[i];
+      if (names[page.page_id] != null)
       {
         lock (lockObject)
         {
-          csv.AppendLine($"{i};{names[i]};{sizes[i]}");
+          csv.AppendLine($"{page.page_id};{page.page_title};{sizes[page.page_id]}");
         }
       }
     });
@@ -102,16 +107,14 @@ public static class SQLParser
   public static void ParseCategoryVectors()
   {
     string connectionString = "Server=localhost;Port=3306;Database=wiki;uid=root;pwd=rootpassword;Connection Timeout=60";
-    var categories = Reader.LoadCategories("Server=localhost;Port=3306;Database=wiki;uid=root;pwd=rootpassword;Connection Timeout=60");
-    var categoryLinks = Reader.LoadCategoryLinks("Server=localhost;Port=3306;Database=wiki;uid=root;pwd=rootpassword;Connection Timeout=60");
     long startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
-    List<PageLink> pageLinks = Reader.LoadPageLinks(connectionString);
-    Util.ShuffleList(pageLinks);
-    Console.WriteLine($"{pageLinks.Count} PageLinks loaded in {Util.GetTimeElapsed(startTime)} ms");
+
+    var categories = Reader.LoadCategories(connectionString);
+    Console.WriteLine($"{categories.Count} Categories loaded in {Util.GetTimeElapsed(startTime)} ms");
     startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
 
-    List<LinkTarget> linkTargets = Reader.LoadLinkTargets(connectionString);
-    Console.WriteLine($"{linkTargets.Count} LinkTargets loaded in {Util.GetTimeElapsed(startTime)} ms");
+    var categoryLinks = Reader.LoadCategoryLinks(connectionString);
+    Console.WriteLine($"{categoryLinks.Count} Category links loaded in {Util.GetTimeElapsed(startTime)} ms");
     startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
 
     List<Page> pages = Reader.LoadPages(connectionString);
@@ -125,11 +128,92 @@ public static class SQLParser
     // Ensure the output directory exists
     Directory.CreateDirectory(outputFolder);
 
-    // Write data to CSV file
-    ProcessData(pageLinks, linkTargets, pages, startTime);
+    ProcessCategoryData(categories, categoryLinks, pages, startTime);
 
     Console.WriteLine("Generation done");
     Console.WriteLine(Util.GetTimeElapsed(startTime) + " ms elapsed!");
+  }
 
+  private static void ProcessCategoryData(List<string> categories, List<CategoryLink> categoryLinks, List<Page> pages, long startTime)
+  {
+    // Create a lookup dictionary for quick categoryLink lookups
+    var categoryLinkLookup = categoryLinks
+        .GroupBy(cl => cl.cl_from)
+        .ToDictionary(g => g.Key, g => g.Select(cl => cl.cl_to).ToHashSet());
+
+    Console.WriteLine("Category links have been grouped by page_id.");
+
+    string csvFilePath = Path.Combine("output", "CategoryVectors.csv");
+    using (var csvWriter = new StreamWriter(csvFilePath, false, Encoding.UTF8))
+    {
+      // Write the header
+      csvWriter.WriteLine("page_id;page_title;" + string.Join(";", categories));
+
+      var entryCount = 0;
+
+      Parallel.ForEach(pages, new ParallelOptions { MaxDegreeOfParallelism = 12 }, (page) =>
+      {
+        byte[] categoryVector = new byte[categories.Count];
+        if (categoryLinkLookup.TryGetValue(page.page_id, out var linkedCategories))
+        {
+          for (int i = 0; i < categories.Count; i++)
+          {
+            if (linkedCategories.Contains(categories[i]))
+            {
+              categoryVector[i] = 1;
+            }
+          }
+        }
+
+        var line = new StringBuilder();
+        line.Append(page.page_id);
+        line.Append(';');
+        line.Append(page.page_title);
+        line.Append(';');
+        line.Append(string.Join(";", categoryVector));
+
+        lock (csvWriter)
+        {
+          csvWriter.WriteLine(line.ToString());
+          entryCount++;
+
+          if (entryCount % 500 == 0)
+          {
+            Console.WriteLine($"{entryCount} lines written in {Util.GetTimeElapsed(startTime)} ms!");
+          }
+        }
+      });
+    }
+
+    Console.WriteLine($"CSV file written with {pages.Count} entries.");
+
+    // Perform K-Means clustering on the resulting CSV file
+    KMeans.PerformKMeansClustering(Path.Combine("output", "CategoryVectors.csv"), Path.Combine("output", "NodeCoordinates.csv"), 20, startTime);
+    // KMeans.PerformBalancedKMeansClustering(Path.Combine("output", "CategoryVectors.csv"), Path.Combine("output", "ClusteredPages.csv"), 50, startTime);
+  }
+
+  // Classes for ML.NET data loading and processing
+  public class InputData
+  {
+    [LoadColumn(0)]
+    public float PageId { get; set; }
+
+    [LoadColumn(1)]
+    public string PageTitle { get; set; }
+
+    [LoadColumn(2, 2 + 50 - 1)] // Assuming categoriesCount is the number of category columns
+    public float[] Features { get; set; }
+  }
+
+  public class ClusteredData
+  {
+    [ColumnName("PredictedLabel")]
+    public uint PredictedLabel { get; set; }
+
+    [LoadColumn(0)]
+    public float PageId { get; set; }
+
+    [LoadColumn(1)]
+    public string PageTitle { get; set; }
   }
 }

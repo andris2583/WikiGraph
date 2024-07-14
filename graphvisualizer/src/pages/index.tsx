@@ -1,6 +1,7 @@
 import { FixedNode } from '@/data/FixedNode';
 import { Link } from '@/data/Link';
 import { Node } from '@/data/Node';
+import { colors } from '@/utils/Constants';
 import { parseFixedNodes, parseLinks, parseNodes } from '@/utils/Parser';
 import { Cosmograph } from '@cosmograph/react';
 import { promises } from 'fs';
@@ -9,12 +10,17 @@ import path from 'path';
 import { useMemo } from 'react';
 
 export const getStaticProps: GetStaticProps = async () => {
-  const linksFilePath = path.join(process.cwd(), 'public', 'Links.csv');
-  const nodesFilePath = path.join(process.cwd(), 'public', 'Nodes.csv');
+  const linksFilePath = path.join(process.cwd(), 'public', '1mil', 'Links.csv');
+  const nodesFilePath = path.join(process.cwd(), 'public', '1mil', 'Nodes.csv');
   const fixedNodesFilePath = path.join(
     process.cwd(),
     'public',
     'NodeCoordinates.csv'
+  );
+  const nodeClustersFilePath = path.join(
+    process.cwd(),
+    'public',
+    'ClusteredPages.csv'
   );
 
   // Read the file contents
@@ -29,6 +35,7 @@ export const getStaticProps: GetStaticProps = async () => {
   const links = parseLinks(linksFileContent);
   const nodes = parseNodes(nodesFileContent);
   const fixedNodes = parseFixedNodes(fixedNodesFileContent);
+
   return {
     props: {
       links,
@@ -52,6 +59,11 @@ export default function Home({
       nodes.length - 1
     ];
   }, []);
+  const onNodeClick = (node: FixedNode | undefined) => {
+    window
+      .open(`https://simple.wikipedia.org/wiki/${node!.label}`, '_blank')!
+      .focus();
+  };
 
   return (
     // <Cosmograph
@@ -67,10 +79,13 @@ export default function Home({
     // />
     <Cosmograph
       nodes={fixedNodes}
-      nodeLabelAccessor={(node: Node) => node.label}
+      nodeLabelAccessor={(node: Node) => node.label + ' - ' + node.out}
       spaceSize={8192}
       showFPSMonitor={true}
-      nodeSize={(node) => Math.max(40, (node.out / maxOut) * 20 * 10)}
+      onClick={(node) => onNodeClick(node)}
+      // @ts-ignore
+      nodeColor={(node) => colors[node.cluster] ?? '#FFF'}
+      nodeSize={(node) => Math.max(4 * 10, (node.out / maxOut) * 10 * 20 * 5)}
       // nodeSize={1}
     />
   );

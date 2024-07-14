@@ -37,14 +37,14 @@ def main():
     node_file = '../output/Nodes.csv'  # Change this to your node file path
     output_file = '../output/NodeCoordinates.csv'
 
+    print("Loading node information...")
+    node_info = load_node_info(node_file)
+
     print("Loading graph from edge file...")
     start_time = time.time()
     G, vertex_map = load_graph_from_edge_file(edge_file)
     print(f"Graph loaded in {time.time() - start_time:.2f} seconds.")
     print(f"Number of nodes: {G.num_vertices()}, Number of edges: {G.num_edges()}")
-
-    print("Loading node information...")
-    node_info = load_node_info(node_file)
 
     print("Computing layout...")
     start_time = time.time()

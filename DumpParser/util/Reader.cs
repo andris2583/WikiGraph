@@ -74,7 +74,7 @@ public static class Reader
     {
       conn.Open();
 
-      string query = $"SELECT page_id,page_title FROM page WHERE page_namespace = 0 ORDER BY page_id ASC";
+      string query = $"SELECT page_id,page_title FROM page WHERE page_namespace = 0 AND page_is_redirect = 0 ORDER BY page_id ASC";
 
       MySqlCommand cmd = new MySqlCommand(query, conn);
 
@@ -104,7 +104,7 @@ public static class Reader
     {
       conn.Open();
 
-      string query = $"select DISTINCT(cl_to) as category_name from categorylinks c WHERE c.cl_type = 'page' AND cl_to NOT IN (select page_title from page p join (select cl_from from categorylinks c WHERE c.cl_to ='Hidden_categories') as cat on cat.cl_from = page_id) GROUP BY cl_to HAVING COUNT(cl_to) > 50;";
+      string query = $"select DISTINCT(cl_to) as category_name, COUNT(cl_to) as cn from categorylinks c WHERE c.cl_type = 'page' AND c.cl_TO NOT LIKE '%_births' AND c.cl_TO NOT LIKE '%_deaths' AND c.cl_to NOT IN (select page_title from page p join (select cl_from from categorylinks c WHERE c.cl_to ='Hidden_categories') as cat on cat.cl_from = page_id ) GROUP BY cl_to  HAVING cn > 100 and cn < 1000 order by cn desc ;";
 
       MySqlCommand cmd = new MySqlCommand(query, conn);
 
@@ -128,7 +128,7 @@ public static class Reader
     {
       conn.Open();
 
-      string query = $"select cl_from, cl_to  from categorylinks c WHERE c.cl_type = 'page' AND cl_to IN (select DISTINCT(cl_to) as category_name from categorylinks c WHERE c.cl_type = 'page' AND cl_to NOT IN (select page_title from page p join (select cl_from from categorylinks c WHERE c.cl_to ='Hidden_categories') as cat on cat.cl_from = page_id) GROUP BY cl_to HAVING COUNT(cl_to) > 50);";
+      string query = $"select cl_from, cl_to  from categorylinks c WHERE c.cl_type = 'page'  AND cl_to IN (select DISTINCT(cl_to) as category_name from categorylinks c WHERE c.cl_type = 'page' AND cl_to NOT IN (select page_title from page p join (select cl_from from categorylinks c WHERE c.cl_to ='Hidden_categories' OR c.cl_TO LIKE '%_births' OR c.cl_TO LIKE '%_deaths') as cat on cat.cl_from = page_id) GROUP BY cl_to HAVING COUNT(cl_to) > 50);";
 
       MySqlCommand cmd = new MySqlCommand(query, conn);
 

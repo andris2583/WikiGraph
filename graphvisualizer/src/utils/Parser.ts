@@ -53,8 +53,9 @@ export const parseFixedNodes = (fileContent: string): FixedNode[] => {
           id: row.id,
           label: row.title,
           out: row.out ?? 0,
-          x: row.x * 10000,
-          y: row.y * 10000,
+          x: row.x * 5000000,
+          y: row.y * 5000000,
+          cluster: row.cluster ?? 1,
         });
       });
     },
