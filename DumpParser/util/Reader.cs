@@ -7,59 +7,72 @@ public static class Reader
   public static List<PageLink> LoadPageLinks(string connectionString)
   {
     List<PageLink> pageLinks = new List<PageLink>();
+    int offset = 0;
+    int limit = 1000000;
 
     using (MySqlConnection conn = new MySqlConnection(connectionString))
     {
       conn.Open();
-
-      string query = $"SELECT pl_from, pl_from_namespace, pl_target_id FROM pagelinks WHERE pl_from_namespace = 0 ORDER BY pl_from ASC, pl_target_id ASC";
-
-      MySqlCommand cmd = new MySqlCommand(query, conn);
-
-      using (MySqlDataReader reader = cmd.ExecuteReader())
+      while (true)
       {
-        while (reader.Read())
-        {
-          PageLink link = new PageLink
-          {
-            pl_from = reader.GetUInt32("pl_from"),
-            pl_from_namespace = reader.GetInt32("pl_from_namespace"),
-            pl_target_id = reader.GetUInt64("pl_target_id")
-          };
+        string query = $"SELECT pl_from, pl_from_namespace, pl_target_id FROM pagelinks WHERE pl_from_namespace = 0 ORDER BY pl_from ASC, pl_target_id ASC LIMIT {limit} OFFSET {offset}";
 
-          pageLinks.Add(link);
+        MySqlCommand cmd = new MySqlCommand(query, conn);
+
+        using (MySqlDataReader reader = cmd.ExecuteReader())
+        {
+          if (!reader.HasRows) break;
+
+          while (reader.Read())
+          {
+            PageLink link = new PageLink
+            {
+              pl_from = reader.GetUInt32("pl_from"),
+              pl_from_namespace = reader.GetInt32("pl_from_namespace"),
+              pl_target_id = reader.GetUInt64("pl_target_id")
+            };
+
+            pageLinks.Add(link);
+          }
         }
+        offset += limit;
       }
     }
 
     return pageLinks;
   }
 
-
   public static List<LinkTarget> LoadLinkTargets(string connectionString)
   {
     List<LinkTarget> linkTargets = new List<LinkTarget>();
+    int offset = 0;
+    int limit = 1000000;
 
     using (MySqlConnection conn = new MySqlConnection(connectionString))
     {
       conn.Open();
-
-      string query = $"SELECT it_id,it_title FROM linktarget WHERE it_namespace = 0 ORDER BY it_id ASC";
-
-      MySqlCommand cmd = new MySqlCommand(query, conn);
-
-      using (MySqlDataReader reader = cmd.ExecuteReader())
+      while (true)
       {
-        while (reader.Read())
-        {
-          LinkTarget link = new LinkTarget
-          {
-            it_id = reader.GetUInt32("it_id"),
-            it_title = Encoding.UTF8.GetString((byte[])reader["it_title"])
-          };
+        string query = $"SELECT it_id, it_title FROM linktarget WHERE it_namespace = 0 ORDER BY it_id ASC LIMIT {limit} OFFSET {offset}";
 
-          linkTargets.Add(link);
+        MySqlCommand cmd = new MySqlCommand(query, conn);
+
+        using (MySqlDataReader reader = cmd.ExecuteReader())
+        {
+          if (!reader.HasRows) break;
+
+          while (reader.Read())
+          {
+            LinkTarget link = new LinkTarget
+            {
+              it_id = reader.GetUInt32("it_id"),
+              it_title = Encoding.UTF8.GetString((byte[])reader["it_title"])
+            };
+
+            linkTargets.Add(link);
+          }
         }
+        offset += limit;
       }
     }
 
@@ -69,27 +82,34 @@ public static class Reader
   public static List<Page> LoadPages(string connectionString)
   {
     List<Page> pages = new List<Page>();
+    int offset = 0;
+    int limit = 1000000;
 
     using (MySqlConnection conn = new MySqlConnection(connectionString))
     {
       conn.Open();
-
-      string query = $"SELECT page_id,page_title FROM page WHERE page_namespace = 0 AND page_is_redirect = 0 ORDER BY page_id ASC";
-
-      MySqlCommand cmd = new MySqlCommand(query, conn);
-
-      using (MySqlDataReader reader = cmd.ExecuteReader())
+      while (true)
       {
-        while (reader.Read())
-        {
-          Page page = new Page
-          {
-            page_id = reader.GetUInt32("page_id"),
-            page_title = Encoding.UTF8.GetString((byte[])reader["page_title"]),
-          };
+        string query = $"SELECT page_id, page_title FROM page WHERE page_namespace = 0 AND page_is_redirect = 0 ORDER BY page_id ASC LIMIT {limit} OFFSET {offset}";
 
-          pages.Add(page);
+        MySqlCommand cmd = new MySqlCommand(query, conn);
+
+        using (MySqlDataReader reader = cmd.ExecuteReader())
+        {
+          if (!reader.HasRows) break;
+
+          while (reader.Read())
+          {
+            Page page = new Page
+            {
+              page_id = reader.GetUInt32("page_id"),
+              page_title = Encoding.UTF8.GetString((byte[])reader["page_title"]),
+            };
+
+            pages.Add(page);
+          }
         }
+        offset += limit;
       }
     }
 
@@ -103,8 +123,7 @@ public static class Reader
     using (MySqlConnection conn = new MySqlConnection(connectionString))
     {
       conn.Open();
-
-      string query = $"select DISTINCT(cl_to) as category_name, COUNT(cl_to) as cn from categorylinks c WHERE c.cl_type = 'page' AND c.cl_TO NOT LIKE '%_births' AND c.cl_TO NOT LIKE '%_deaths' AND c.cl_to NOT IN (select page_title from page p join (select cl_from from categorylinks c WHERE c.cl_to ='Hidden_categories') as cat on cat.cl_from = page_id ) GROUP BY cl_to  HAVING cn > 100 and cn < 1000 order by cn desc ;";
+      string query = "SELECT DISTINCT(cl_to) as category_name, COUNT(cl_to) as cn FROM categorylinks GROUP BY cl_to HAVING cn > 100 ORDER BY cn DESC";
 
       MySqlCommand cmd = new MySqlCommand(query, conn);
 
@@ -123,29 +142,35 @@ public static class Reader
   public static List<CategoryLink> LoadCategoryLinks(string connectionString)
   {
     List<CategoryLink> categoryLinks = new List<CategoryLink>();
+    int offset = 0;
+    int limit = 1000000;
 
     using (MySqlConnection conn = new MySqlConnection(connectionString))
     {
       conn.Open();
-
-      string query = $"select cl_from, cl_to  from categorylinks c WHERE c.cl_type = 'page'  AND cl_to IN (select DISTINCT(cl_to) as category_name from categorylinks c WHERE c.cl_type = 'page' AND cl_to NOT IN (select page_title from page p join (select cl_from from categorylinks c WHERE c.cl_to ='Hidden_categories' OR c.cl_TO LIKE '%_births' OR c.cl_TO LIKE '%_deaths') as cat on cat.cl_from = page_id) GROUP BY cl_to HAVING COUNT(cl_to) > 50);";
-
-      MySqlCommand cmd = new MySqlCommand(query, conn);
-
-      using (MySqlDataReader reader = cmd.ExecuteReader())
+      while (true)
       {
-        while (reader.Read())
+        string query = $"SELECT cl_from, cl_to FROM categorylinks c WHERE c.cl_type = 'page' LIMIT {limit} OFFSET {offset}";
+
+        MySqlCommand cmd = new MySqlCommand(query, conn);
+
+        using (MySqlDataReader reader = cmd.ExecuteReader())
         {
-          categoryLinks.Add(new CategoryLink
+          if (!reader.HasRows) break;
+
+          while (reader.Read())
           {
-            cl_from = reader.GetUInt32("cl_from"),
-            cl_to = Encoding.UTF8.GetString((byte[])reader["cl_to"])
-          });
+            categoryLinks.Add(new CategoryLink
+            {
+              cl_from = reader.GetUInt32("cl_from"),
+              cl_to = Encoding.UTF8.GetString((byte[])reader["cl_to"])
+            });
+          }
         }
+        offset += limit;
       }
     }
 
     return categoryLinks;
   }
-
 }

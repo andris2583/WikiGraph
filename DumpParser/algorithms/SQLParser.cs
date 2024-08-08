@@ -8,21 +8,20 @@ using Microsoft.ML.Transforms;
 
 public static class SQLParser
 {
-  public static void ParseGraph()
+  public static void ParseGraph(string targetDatabase)
   {
-    string connectionString = "Server=localhost;Port=3306;Database=wiki;uid=root;pwd=rootpassword;Connection Timeout=60";
+    string connectionString = $"Server=localhost;Port=3306;Database={targetDatabase};uid=root;pwd=rootpassword;default command timeout=60000";
     long startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+    List<Page> pages = Reader.LoadPages(connectionString);
+    Console.WriteLine($"{pages.Count} Pages loaded in {Util.GetTimeElapsed(startTime)} ms");
+    startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+
     List<PageLink> pageLinks = Reader.LoadPageLinks(connectionString);
-    Util.ShuffleList(pageLinks);
     Console.WriteLine($"{pageLinks.Count} PageLinks loaded in {Util.GetTimeElapsed(startTime)} ms");
     startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
 
     List<LinkTarget> linkTargets = Reader.LoadLinkTargets(connectionString);
     Console.WriteLine($"{linkTargets.Count} LinkTargets loaded in {Util.GetTimeElapsed(startTime)} ms");
-    startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
-
-    List<Page> pages = Reader.LoadPages(connectionString);
-    Console.WriteLine($"{pages.Count} Pages loaded in {Util.GetTimeElapsed(startTime)} ms");
     startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
 
     startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
@@ -104,9 +103,9 @@ public static class SQLParser
     File.WriteAllText(Path.Combine("output", "Nodes.csv"), csv.ToString());
   }
 
-  public static void ParseCategoryVectors()
+  public static void ParseCategoryVectors(string targetDatabase)
   {
-    string connectionString = "Server=localhost;Port=3306;Database=wiki;uid=root;pwd=rootpassword;Connection Timeout=60";
+    string connectionString = $"Server=localhost;Port=3306;Database={targetDatabase};uid=root;pwd=rootpassword;default command timeout=60000";
     long startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
 
     var categories = Reader.LoadCategories(connectionString);

@@ -1,92 +1,270 @@
-import { FixedNode } from '@/data/FixedNode';
-import { Link } from '@/data/Link';
-import { Node } from '@/data/Node';
-import { colors } from '@/utils/Constants';
-import { parseFixedNodes, parseLinks, parseNodes } from '@/utils/Parser';
-import { Cosmograph } from '@cosmograph/react';
-import { promises } from 'fs';
-import { GetStaticProps } from 'next';
-import path from 'path';
-import { useMemo } from 'react';
-
-export const getStaticProps: GetStaticProps = async () => {
-  const linksFilePath = path.join(process.cwd(), 'public', '1mil', 'Links.csv');
-  const nodesFilePath = path.join(process.cwd(), 'public', '1mil', 'Nodes.csv');
-  const fixedNodesFilePath = path.join(
-    process.cwd(),
-    'public',
-    'NodeCoordinates.csv'
-  );
-  const nodeClustersFilePath = path.join(
-    process.cwd(),
-    'public',
-    'ClusteredPages.csv'
-  );
-
-  // Read the file contents
-  const linksFileContent = await promises.readFile(linksFilePath, 'utf-8');
-  const nodesFileContent = await promises.readFile(nodesFilePath, 'utf-8');
-  const fixedNodesFileContent = await promises.readFile(
-    fixedNodesFilePath,
-    'utf-8'
-  );
-
-  // Parse the CSV data into JavaScript objects
-  const links = parseLinks(linksFileContent);
-  const nodes = parseNodes(nodesFileContent);
-  const fixedNodes = parseFixedNodes(fixedNodesFileContent);
-
-  return {
-    props: {
-      links,
-      nodes,
-      fixedNodes,
-    },
-  };
-};
-
-export default function Home({
-  links,
-  nodes,
-  fixedNodes,
-}: {
-  links: Link[];
-  nodes: Node[];
-  fixedNodes: FixedNode[];
-}) {
-  const maxOut = useMemo(() => {
-    return nodes.map((node) => Number(node.out)).sort((a, b) => a - b)[
-      nodes.length - 1
-    ];
-  }, []);
-  const onNodeClick = (node: FixedNode | undefined) => {
-    window
-      .open(`https://simple.wikipedia.org/wiki/${node!.label}`, '_blank')!
-      .focus();
-  };
-
+export default function Home() {
   return (
-    // <Cosmograph
-    //   nodes={nodes}
-    //   links={links}
-    //   nodeLabelAccessor={(node: Node) => node.label}
-    //   // simulationRepulsion={0.7}
-    //   // simulationLinkSpring={0.05}
-    //   // simulationGravity={0.1}
-    //   spaceSize={8192}
-    //   showFPSMonitor={true}
-    //   randomSeed={Math.random()}
-    // />
-    <Cosmograph
-      nodes={fixedNodes}
-      nodeLabelAccessor={(node: Node) => node.label + ' - ' + node.out}
-      spaceSize={8192}
-      showFPSMonitor={true}
-      onClick={(node) => onNodeClick(node)}
-      // @ts-ignore
-      nodeColor={(node) => colors[node.cluster] ?? '#FFF'}
-      nodeSize={(node) => Math.max(4 * 10, (node.out / maxOut) * 10 * 20 * 5)}
-      // nodeSize={1}
-    />
+    <>
+      <div>
+        Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua. Purus gravida quis blandit turpis. Augue neque gravida in
+        fermentum et sollicitudin ac orci. Et sollicitudin ac orci phasellus
+        egestas. Elementum tempus egestas sed sed risus pretium quam vulputate.
+        Interdum velit euismod in pellentesque massa placerat duis ultricies.
+        Rhoncus mattis rhoncus urna neque viverra justo nec ultrices dui.
+        Praesent semper feugiat nibh sed pulvinar. Ultrices gravida dictum fusce
+        ut placerat orci nulla pellentesque. Malesuada proin libero nunc
+        consequat interdum varius sit amet. Lectus quam id leo in vitae. Sed
+        viverra tellus in hac habitasse platea dictumst. Vivamus at augue eget
+        arcu. Augue mauris augue neque gravida in. Tincidunt vitae semper quis
+        lectus nulla at volutpat diam. Gravida dictum fusce ut placerat. Erat
+        velit scelerisque in dictum non. Tempus quam pellentesque nec nam
+        aliquam sem et tortor consequat. Eu nisl nunc mi ipsum faucibus. Cras
+        fermentum odio eu feugiat pretium nibh. Vel pharetra vel turpis nunc
+        eget lorem dolor sed viverra. Sollicitudin tempor id eu nisl nunc mi
+        ipsum faucibus. Sed id semper risus in hendrerit gravida rutrum. Eget
+        nulla facilisi etiam dignissim. Erat imperdiet sed euismod nisi. Risus
+        in hendrerit gravida rutrum quisque non tellus orci ac.
+      </div>{' '}
+      <div>
+        Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua. Purus gravida quis blandit turpis. Augue neque gravida in
+        fermentum et sollicitudin ac orci. Et sollicitudin ac orci phasellus
+        egestas. Elementum tempus egestas sed sed risus pretium quam vulputate.
+        Interdum velit euismod in pellentesque massa placerat duis ultricies.
+        Rhoncus mattis rhoncus urna neque viverra justo nec ultrices dui.
+        Praesent semper feugiat nibh sed pulvinar. Ultrices gravida dictum fusce
+        ut placerat orci nulla pellentesque. Malesuada proin libero nunc
+        consequat interdum varius sit amet. Lectus quam id leo in vitae. Sed
+        viverra tellus in hac habitasse platea dictumst. Vivamus at augue eget
+        arcu. Augue mauris augue neque gravida in. Tincidunt vitae semper quis
+        lectus nulla at volutpat diam. Gravida dictum fusce ut placerat. Erat
+        velit scelerisque in dictum non. Tempus quam pellentesque nec nam
+        aliquam sem et tortor consequat. Eu nisl nunc mi ipsum faucibus. Cras
+        fermentum odio eu feugiat pretium nibh. Vel pharetra vel turpis nunc
+        eget lorem dolor sed viverra. Sollicitudin tempor id eu nisl nunc mi
+        ipsum faucibus. Sed id semper risus in hendrerit gravida rutrum. Eget
+        nulla facilisi etiam dignissim. Erat imperdiet sed euismod nisi. Risus
+        in hendrerit gravida rutrum quisque non tellus orci ac.
+      </div>{' '}
+      <div>
+        Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua. Purus gravida quis blandit turpis. Augue neque gravida in
+        fermentum et sollicitudin ac orci. Et sollicitudin ac orci phasellus
+        egestas. Elementum tempus egestas sed sed risus pretium quam vulputate.
+        Interdum velit euismod in pellentesque massa placerat duis ultricies.
+        Rhoncus mattis rhoncus urna neque viverra justo nec ultrices dui.
+        Praesent semper feugiat nibh sed pulvinar. Ultrices gravida dictum fusce
+        ut placerat orci nulla pellentesque. Malesuada proin libero nunc
+        consequat interdum varius sit amet. Lectus quam id leo in vitae. Sed
+        viverra tellus in hac habitasse platea dictumst. Vivamus at augue eget
+        arcu. Augue mauris augue neque gravida in. Tincidunt vitae semper quis
+        lectus nulla at volutpat diam. Gravida dictum fusce ut placerat. Erat
+        velit scelerisque in dictum non. Tempus quam pellentesque nec nam
+        aliquam sem et tortor consequat. Eu nisl nunc mi ipsum faucibus. Cras
+        fermentum odio eu feugiat pretium nibh. Vel pharetra vel turpis nunc
+        eget lorem dolor sed viverra. Sollicitudin tempor id eu nisl nunc mi
+        ipsum faucibus. Sed id semper risus in hendrerit gravida rutrum. Eget
+        nulla facilisi etiam dignissim. Erat imperdiet sed euismod nisi. Risus
+        in hendrerit gravida rutrum quisque non tellus orci ac.
+      </div>
+      <div>
+        Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua. Purus gravida quis blandit turpis. Augue neque gravida in
+        fermentum et sollicitudin ac orci. Et sollicitudin ac orci phasellus
+        egestas. Elementum tempus egestas sed sed risus pretium quam vulputate.
+        Interdum velit euismod in pellentesque massa placerat duis ultricies.
+        Rhoncus mattis rhoncus urna neque viverra justo nec ultrices dui.
+        Praesent semper feugiat nibh sed pulvinar. Ultrices gravida dictum fusce
+        ut placerat orci nulla pellentesque. Malesuada proin libero nunc
+        consequat interdum varius sit amet. Lectus quam id leo in vitae. Sed
+        viverra tellus in hac habitasse platea dictumst. Vivamus at augue eget
+        arcu. Augue mauris augue neque gravida in. Tincidunt vitae semper quis
+        lectus nulla at volutpat diam. Gravida dictum fusce ut placerat. Erat
+        velit scelerisque in dictum non. Tempus quam pellentesque nec nam
+        aliquam sem et tortor consequat. Eu nisl nunc mi ipsum faucibus. Cras
+        fermentum odio eu feugiat pretium nibh. Vel pharetra vel turpis nunc
+        eget lorem dolor sed viverra. Sollicitudin tempor id eu nisl nunc mi
+        ipsum faucibus. Sed id semper risus in hendrerit gravida rutrum. Eget
+        nulla facilisi etiam dignissim. Erat imperdiet sed euismod nisi. Risus
+        in hendrerit gravida rutrum quisque non tellus orci ac.
+      </div>{' '}
+      <div>
+        Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua. Purus gravida quis blandit turpis. Augue neque gravida in
+        fermentum et sollicitudin ac orci. Et sollicitudin ac orci phasellus
+        egestas. Elementum tempus egestas sed sed risus pretium quam vulputate.
+        Interdum velit euismod in pellentesque massa placerat duis ultricies.
+        Rhoncus mattis rhoncus urna neque viverra justo nec ultrices dui.
+        Praesent semper feugiat nibh sed pulvinar. Ultrices gravida dictum fusce
+        ut placerat orci nulla pellentesque. Malesuada proin libero nunc
+        consequat interdum varius sit amet. Lectus quam id leo in vitae. Sed
+        viverra tellus in hac habitasse platea dictumst. Vivamus at augue eget
+        arcu. Augue mauris augue neque gravida in. Tincidunt vitae semper quis
+        lectus nulla at volutpat diam. Gravida dictum fusce ut placerat. Erat
+        velit scelerisque in dictum non. Tempus quam pellentesque nec nam
+        aliquam sem et tortor consequat. Eu nisl nunc mi ipsum faucibus. Cras
+        fermentum odio eu feugiat pretium nibh. Vel pharetra vel turpis nunc
+        eget lorem dolor sed viverra. Sollicitudin tempor id eu nisl nunc mi
+        ipsum faucibus. Sed id semper risus in hendrerit gravida rutrum. Eget
+        nulla facilisi etiam dignissim. Erat imperdiet sed euismod nisi. Risus
+        in hendrerit gravida rutrum quisque non tellus orci ac.
+      </div>{' '}
+      <div>
+        Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua. Purus gravida quis blandit turpis. Augue neque gravida in
+        fermentum et sollicitudin ac orci. Et sollicitudin ac orci phasellus
+        egestas. Elementum tempus egestas sed sed risus pretium quam vulputate.
+        Interdum velit euismod in pellentesque massa placerat duis ultricies.
+        Rhoncus mattis rhoncus urna neque viverra justo nec ultrices dui.
+        Praesent semper feugiat nibh sed pulvinar. Ultrices gravida dictum fusce
+        ut placerat orci nulla pellentesque. Malesuada proin libero nunc
+        consequat interdum varius sit amet. Lectus quam id leo in vitae. Sed
+        viverra tellus in hac habitasse platea dictumst. Vivamus at augue eget
+        arcu. Augue mauris augue neque gravida in. Tincidunt vitae semper quis
+        lectus nulla at volutpat diam. Gravida dictum fusce ut placerat. Erat
+        velit scelerisque in dictum non. Tempus quam pellentesque nec nam
+        aliquam sem et tortor consequat. Eu nisl nunc mi ipsum faucibus. Cras
+        fermentum odio eu feugiat pretium nibh. Vel pharetra vel turpis nunc
+        eget lorem dolor sed viverra. Sollicitudin tempor id eu nisl nunc mi
+        ipsum faucibus. Sed id semper risus in hendrerit gravida rutrum. Eget
+        nulla facilisi etiam dignissim. Erat imperdiet sed euismod nisi. Risus
+        in hendrerit gravida rutrum quisque non tellus orci ac.
+      </div>
+      <div>
+        Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua. Purus gravida quis blandit turpis. Augue neque gravida in
+        fermentum et sollicitudin ac orci. Et sollicitudin ac orci phasellus
+        egestas. Elementum tempus egestas sed sed risus pretium quam vulputate.
+        Interdum velit euismod in pellentesque massa placerat duis ultricies.
+        Rhoncus mattis rhoncus urna neque viverra justo nec ultrices dui.
+        Praesent semper feugiat nibh sed pulvinar. Ultrices gravida dictum fusce
+        ut placerat orci nulla pellentesque. Malesuada proin libero nunc
+        consequat interdum varius sit amet. Lectus quam id leo in vitae. Sed
+        viverra tellus in hac habitasse platea dictumst. Vivamus at augue eget
+        arcu. Augue mauris augue neque gravida in. Tincidunt vitae semper quis
+        lectus nulla at volutpat diam. Gravida dictum fusce ut placerat. Erat
+        velit scelerisque in dictum non. Tempus quam pellentesque nec nam
+        aliquam sem et tortor consequat. Eu nisl nunc mi ipsum faucibus. Cras
+        fermentum odio eu feugiat pretium nibh. Vel pharetra vel turpis nunc
+        eget lorem dolor sed viverra. Sollicitudin tempor id eu nisl nunc mi
+        ipsum faucibus. Sed id semper risus in hendrerit gravida rutrum. Eget
+        nulla facilisi etiam dignissim. Erat imperdiet sed euismod nisi. Risus
+        in hendrerit gravida rutrum quisque non tellus orci ac.
+      </div>{' '}
+      <div>
+        Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua. Purus gravida quis blandit turpis. Augue neque gravida in
+        fermentum et sollicitudin ac orci. Et sollicitudin ac orci phasellus
+        egestas. Elementum tempus egestas sed sed risus pretium quam vulputate.
+        Interdum velit euismod in pellentesque massa placerat duis ultricies.
+        Rhoncus mattis rhoncus urna neque viverra justo nec ultrices dui.
+        Praesent semper feugiat nibh sed pulvinar. Ultrices gravida dictum fusce
+        ut placerat orci nulla pellentesque. Malesuada proin libero nunc
+        consequat interdum varius sit amet. Lectus quam id leo in vitae. Sed
+        viverra tellus in hac habitasse platea dictumst. Vivamus at augue eget
+        arcu. Augue mauris augue neque gravida in. Tincidunt vitae semper quis
+        lectus nulla at volutpat diam. Gravida dictum fusce ut placerat. Erat
+        velit scelerisque in dictum non. Tempus quam pellentesque nec nam
+        aliquam sem et tortor consequat. Eu nisl nunc mi ipsum faucibus. Cras
+        fermentum odio eu feugiat pretium nibh. Vel pharetra vel turpis nunc
+        eget lorem dolor sed viverra. Sollicitudin tempor id eu nisl nunc mi
+        ipsum faucibus. Sed id semper risus in hendrerit gravida rutrum. Eget
+        nulla facilisi etiam dignissim. Erat imperdiet sed euismod nisi. Risus
+        in hendrerit gravida rutrum quisque non tellus orci ac.
+      </div>{' '}
+      <div>
+        Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua. Purus gravida quis blandit turpis. Augue neque gravida in
+        fermentum et sollicitudin ac orci. Et sollicitudin ac orci phasellus
+        egestas. Elementum tempus egestas sed sed risus pretium quam vulputate.
+        Interdum velit euismod in pellentesque massa placerat duis ultricies.
+        Rhoncus mattis rhoncus urna neque viverra justo nec ultrices dui.
+        Praesent semper feugiat nibh sed pulvinar. Ultrices gravida dictum fusce
+        ut placerat orci nulla pellentesque. Malesuada proin libero nunc
+        consequat interdum varius sit amet. Lectus quam id leo in vitae. Sed
+        viverra tellus in hac habitasse platea dictumst. Vivamus at augue eget
+        arcu. Augue mauris augue neque gravida in. Tincidunt vitae semper quis
+        lectus nulla at volutpat diam. Gravida dictum fusce ut placerat. Erat
+        velit scelerisque in dictum non. Tempus quam pellentesque nec nam
+        aliquam sem et tortor consequat. Eu nisl nunc mi ipsum faucibus. Cras
+        fermentum odio eu feugiat pretium nibh. Vel pharetra vel turpis nunc
+        eget lorem dolor sed viverra. Sollicitudin tempor id eu nisl nunc mi
+        ipsum faucibus. Sed id semper risus in hendrerit gravida rutrum. Eget
+        nulla facilisi etiam dignissim. Erat imperdiet sed euismod nisi. Risus
+        in hendrerit gravida rutrum quisque non tellus orci ac.
+      </div>
+      <div>
+        Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua. Purus gravida quis blandit turpis. Augue neque gravida in
+        fermentum et sollicitudin ac orci. Et sollicitudin ac orci phasellus
+        egestas. Elementum tempus egestas sed sed risus pretium quam vulputate.
+        Interdum velit euismod in pellentesque massa placerat duis ultricies.
+        Rhoncus mattis rhoncus urna neque viverra justo nec ultrices dui.
+        Praesent semper feugiat nibh sed pulvinar. Ultrices gravida dictum fusce
+        ut placerat orci nulla pellentesque. Malesuada proin libero nunc
+        consequat interdum varius sit amet. Lectus quam id leo in vitae. Sed
+        viverra tellus in hac habitasse platea dictumst. Vivamus at augue eget
+        arcu. Augue mauris augue neque gravida in. Tincidunt vitae semper quis
+        lectus nulla at volutpat diam. Gravida dictum fusce ut placerat. Erat
+        velit scelerisque in dictum non. Tempus quam pellentesque nec nam
+        aliquam sem et tortor consequat. Eu nisl nunc mi ipsum faucibus. Cras
+        fermentum odio eu feugiat pretium nibh. Vel pharetra vel turpis nunc
+        eget lorem dolor sed viverra. Sollicitudin tempor id eu nisl nunc mi
+        ipsum faucibus. Sed id semper risus in hendrerit gravida rutrum. Eget
+        nulla facilisi etiam dignissim. Erat imperdiet sed euismod nisi. Risus
+        in hendrerit gravida rutrum quisque non tellus orci ac.
+      </div>{' '}
+      <div>
+        Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua. Purus gravida quis blandit turpis. Augue neque gravida in
+        fermentum et sollicitudin ac orci. Et sollicitudin ac orci phasellus
+        egestas. Elementum tempus egestas sed sed risus pretium quam vulputate.
+        Interdum velit euismod in pellentesque massa placerat duis ultricies.
+        Rhoncus mattis rhoncus urna neque viverra justo nec ultrices dui.
+        Praesent semper feugiat nibh sed pulvinar. Ultrices gravida dictum fusce
+        ut placerat orci nulla pellentesque. Malesuada proin libero nunc
+        consequat interdum varius sit amet. Lectus quam id leo in vitae. Sed
+        viverra tellus in hac habitasse platea dictumst. Vivamus at augue eget
+        arcu. Augue mauris augue neque gravida in. Tincidunt vitae semper quis
+        lectus nulla at volutpat diam. Gravida dictum fusce ut placerat. Erat
+        velit scelerisque in dictum non. Tempus quam pellentesque nec nam
+        aliquam sem et tortor consequat. Eu nisl nunc mi ipsum faucibus. Cras
+        fermentum odio eu feugiat pretium nibh. Vel pharetra vel turpis nunc
+        eget lorem dolor sed viverra. Sollicitudin tempor id eu nisl nunc mi
+        ipsum faucibus. Sed id semper risus in hendrerit gravida rutrum. Eget
+        nulla facilisi etiam dignissim. Erat imperdiet sed euismod nisi. Risus
+        in hendrerit gravida rutrum quisque non tellus orci ac.
+      </div>{' '}
+      <div>
+        Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua. Purus gravida quis blandit turpis. Augue neque gravida in
+        fermentum et sollicitudin ac orci. Et sollicitudin ac orci phasellus
+        egestas. Elementum tempus egestas sed sed risus pretium quam vulputate.
+        Interdum velit euismod in pellentesque massa placerat duis ultricies.
+        Rhoncus mattis rhoncus urna neque viverra justo nec ultrices dui.
+        Praesent semper feugiat nibh sed pulvinar. Ultrices gravida dictum fusce
+        ut placerat orci nulla pellentesque. Malesuada proin libero nunc
+        consequat interdum varius sit amet. Lectus quam id leo in vitae. Sed
+        viverra tellus in hac habitasse platea dictumst. Vivamus at augue eget
+        arcu. Augue mauris augue neque gravida in. Tincidunt vitae semper quis
+        lectus nulla at volutpat diam. Gravida dictum fusce ut placerat. Erat
+        velit scelerisque in dictum non. Tempus quam pellentesque nec nam
+        aliquam sem et tortor consequat. Eu nisl nunc mi ipsum faucibus. Cras
+        fermentum odio eu feugiat pretium nibh. Vel pharetra vel turpis nunc
+        eget lorem dolor sed viverra. Sollicitudin tempor id eu nisl nunc mi
+        ipsum faucibus. Sed id semper risus in hendrerit gravida rutrum. Eget
+        nulla facilisi etiam dignissim. Erat imperdiet sed euismod nisi. Risus
+        in hendrerit gravida rutrum quisque non tellus orci ac.
+      </div>
+    </>
   );
 }
