@@ -4,7 +4,10 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head />
-      <body style={{ overflow: 'hidden' }}>
+      <body
+        style={{ overflow: 'hidden' }}
+        className="dark text-foreground bg-background"
+      >
         <Main />
         <NextScript />
       </body>
