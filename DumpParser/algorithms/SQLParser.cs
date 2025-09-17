@@ -8,102 +8,103 @@ using Microsoft.ML.Transforms;
 
 public static class SQLParser
 {
+  private const int NumberOfClusters = 20;
+
   public static void ParseGraph(string targetDatabase)
   {
     string connectionString = $"Server=localhost;Port=3306;Database={targetDatabase};uid=root;pwd=rootpassword;default command timeout=60000";
     long startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
-    List<Page> pages = Reader.LoadPages(connectionString);
-    Console.WriteLine($"{pages.Count} Pages loaded in {Util.GetTimeElapsed(startTime)} ms");
-    startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
 
-    List<PageLink> pageLinks = Reader.LoadPageLinks(connectionString);
-    Console.WriteLine($"{pageLinks.Count} PageLinks loaded in {Util.GetTimeElapsed(startTime)} ms");
-    startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+    // Open file streams for writing
+    using (var linksWriter = new StreamWriter(Path.Combine("output", "Links.csv")))
+    using (var nodesWriter = new StreamWriter(Path.Combine("output", "Nodes.csv")))
+    {
+      // Write headers
+      linksWriter.WriteLine("source;target");
+      nodesWriter.WriteLine("id;title;out");
 
-    List<LinkTarget> linkTargets = Reader.LoadLinkTargets(connectionString);
-    Console.WriteLine($"{linkTargets.Count} LinkTargets loaded in {Util.GetTimeElapsed(startTime)} ms");
-    startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+      // Process Pages in chunks
+      var pageDict = new Dictionary<uint, string>();
+      var pageTitleDict = new Dictionary<string, uint>();
+      Reader.LoadPages(connectionString, pages =>
+      {
+        foreach (var page in pages)
+        {
+          pageDict[page.page_id] = page.page_title;
+          pageTitleDict[page.page_title] = page.page_id;
 
-    startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+          // Write to Nodes CSV immediately
+          nodesWriter.WriteLine($"{page.page_id};{page.page_title.Replace(";", "").Replace(",", "").Replace("\n", "").Replace("\r", "")};0");
+        }
+        Console.WriteLine($"{pageDict.Count} Pages processed so far in {Util.GetTimeElapsed(startTime)} ms");
+      });
 
-    string outputFolder = "output";
+      var linkTargetDict = new Dictionary<ulong, string>();
 
-    // Ensure the output directory exists
-    Directory.CreateDirectory(outputFolder);
+      // Process LinkTargets in chunks
+      Reader.LoadLinkTargets(connectionString, linkTargets =>
+      {
+        foreach (var linkTarget in linkTargets)
+        {
+          linkTargetDict[linkTarget.it_id] = linkTarget.it_title;
+        }
+        Console.WriteLine($"{linkTargetDict.Count} LinkTargets processed so far in {Util.GetTimeElapsed(startTime)} ms");
+      });
 
-    ProcessGraphData(pageLinks, linkTargets, pages, startTime);
+      var entryCount = 0;
+      int[] sizes = new int[80000000];
+
+      // Process PageLinks in chunks and write to CSV
+      Reader.LoadPageLinks(connectionString, pageLinks =>
+      {
+        Parallel.ForEach(pageLinks, new ParallelOptions { MaxDegreeOfParallelism = 12 }, (link) =>
+              {
+                try
+                {
+                  if (linkTargetDict.TryGetValue(link.pl_target_id, out string linkTargetTitle) &&
+                            pageDict.TryGetValue(link.pl_from, out string sourcePageTitle) &&
+                            pageTitleDict.TryGetValue(linkTargetTitle.Replace(";", "").Replace(",", "").Replace("\n", "").Replace("\r", ""), out uint targetPageId))
+                  {
+                    var newLine = $"{link.pl_from};{targetPageId}";
+
+                    lock (linksWriter)
+                    {
+                      sizes[link.pl_from]++;
+                      linksWriter.WriteLine(newLine);
+                      entryCount++;
+
+                      if (entryCount % 500 == 0)
+                      {
+                        Console.WriteLine($"{entryCount} lines written in {Util.GetTimeElapsed(startTime)} ms! Pagelink: {pageLinks.IndexOf(link)} / {pageLinks.Count()}");
+                      }
+                    }
+                  }
+                }
+                catch
+                {
+                  // Handle exceptions if necessary
+                }
+              });
+      });
+
+      // Update the "out" column in the nodes CSV file
+      nodesWriter.BaseStream.Seek(0, SeekOrigin.Begin); // Reset the stream to the beginning
+      nodesWriter.WriteLine("id;title;out"); // Rewrite header
+
+      foreach (var page in pageDict)
+      {
+        if (sizes[page.Key] > 0)
+        {
+          nodesWriter.WriteLine($"{page.Key};{page.Value};{sizes[page.Key]}");
+        }
+      }
+    }
 
     Console.WriteLine("Generation done");
     Console.WriteLine(Util.GetTimeElapsed(startTime) + " ms elapsed!");
-
   }
 
-  public static void ProcessGraphData(List<PageLink> pageLinks, List<LinkTarget> linkTargets, List<Page> pages, long startTime)
-  {
-    var csv = new StringBuilder();
-    string[] names = new string[1200000];
-    int[] sizes = new int[1200000];
-    csv.AppendLine("source;target"); // Header
-
-    var entryCount = 0;
-    var linkTargetDict = linkTargets.ToDictionary(linkTarget => linkTarget.it_id, linkTarget => linkTarget.it_title);
-    var pageDict = pages.ToDictionary(page => page.page_id, page => page.page_title);
-    var pageTitleDict = pages.ToDictionary(page => page.page_title, page => page.page_id);
-
-    object lockObject = new object();
-
-    Parallel.ForEach(pageLinks, new ParallelOptions { MaxDegreeOfParallelism = 12 }, (link, state) =>
-    {
-      try
-      {
-        if (linkTargetDict.TryGetValue(link.pl_target_id, out string linkTargetTitle) &&
-            pageDict.TryGetValue(link.pl_from, out string sourcePageTitle) &&
-            pageTitleDict.TryGetValue(linkTargetTitle, out uint targetPageId))
-        {
-          var newLine = $"{link.pl_from};{targetPageId}";
-
-          lock (lockObject)
-          {
-            names[link.pl_from] = sourcePageTitle;
-            names[targetPageId] = linkTargetTitle;
-            sizes[link.pl_from]++;
-            csv.AppendLine(newLine);
-            entryCount++;
-
-            if (entryCount % 500 == 0)
-            {
-              Console.WriteLine($"{entryCount} lines written in {Util.GetTimeElapsed(startTime)} ms! Pagelink: {pageLinks.IndexOf(link)} / {pageLinks.Count()}");
-            }
-          }
-        }
-      }
-      catch
-      {
-        // Handle exceptions if necessary
-      }
-    });
-
-    File.WriteAllText(Path.Combine("output", "Links.csv"), csv.ToString());
-
-    csv.Clear();
-    csv.AppendLine("id;title;out");
-
-    Parallel.For(0, pages.Count, new ParallelOptions { MaxDegreeOfParallelism = 12 }, i =>
-    {
-      var page = pages[i];
-      if (names[page.page_id] != null)
-      {
-        lock (lockObject)
-        {
-          csv.AppendLine($"{page.page_id};{page.page_title};{sizes[page.page_id]}");
-        }
-      }
-    });
-
-    File.WriteAllText(Path.Combine("output", "Nodes.csv"), csv.ToString());
-  }
-
-  public static void ParseCategoryVectors(string targetDatabase)
+  public static void ParseCategories(string targetDatabase)
   {
     string connectionString = $"Server=localhost;Port=3306;Database={targetDatabase};uid=root;pwd=rootpassword;default command timeout=60000";
     long startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
@@ -116,7 +117,12 @@ public static class SQLParser
     Console.WriteLine($"{categoryLinks.Count} Category links loaded in {Util.GetTimeElapsed(startTime)} ms");
     startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
 
-    List<Page> pages = Reader.LoadPages(connectionString);
+    List<Page> pages = new List<Page>();
+    Reader.LoadPages(connectionString, pages =>
+      {
+        pages.AddRange(pages);
+        Console.WriteLine($"{pages.Count} Pages processed so far in {Util.GetTimeElapsed(startTime)} ms");
+      });
     Console.WriteLine($"{pages.Count} Pages loaded in {Util.GetTimeElapsed(startTime)} ms");
     startTime = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
 
@@ -187,11 +193,18 @@ public static class SQLParser
     Console.WriteLine($"CSV file written with {pages.Count} entries.");
 
     // Perform K-Means clustering on the resulting CSV file
-    KMeans.PerformKMeansClustering(Path.Combine("output", "CategoryVectors.csv"), Path.Combine("output", "NodeCoordinates.csv"), 20, startTime);
-    // KMeans.PerformBalancedKMeansClustering(Path.Combine("output", "CategoryVectors.csv"), Path.Combine("output", "ClusteredPages.csv"), 50, startTime);
+    KMeans.PerformKMeansClustering(Path.Combine("output", "CategoryVectors.csv"), Path.Combine("output", "NodeCoordinates.csv"), NumberOfClusters, startTime);
   }
 
-  // Classes for ML.NET data loading and processing
+  public static void AnalyzeCommunities(string targetDatabase)
+  {
+    var nodes = File.ReadAllLines(Path.Combine("output", "NodeCoordinates.csv"))
+      .Select(line => line.Split(';'))
+      .ToList();
+
+
+  }
+
   public class InputData
   {
     [LoadColumn(0)]

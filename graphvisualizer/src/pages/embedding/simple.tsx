@@ -16,8 +16,8 @@ import path from 'path';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 export const getStaticProps: GetStaticProps = async () => {
-  const linksFilePath = path.join(process.cwd(), 'public', '1mil', 'Links.csv');
-  const nodesFilePath = path.join(process.cwd(), 'public', '1mil', 'Nodes.csv');
+  const linksFilePath = path.join(process.cwd(), 'public', 'full', 'Links.csv');
+  const nodesFilePath = path.join(process.cwd(), 'public', 'full', 'Nodes.csv');
   const fixedNodesFilePath = path.join(
     process.cwd(),
     'public',

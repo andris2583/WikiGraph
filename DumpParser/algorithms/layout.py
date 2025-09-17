@@ -1,76 +1,88 @@
-import graph_tool.all as gt
 import csv
+from graph_tool.all import Graph, sfdp_layout
 import time
+import sys
 
-def load_graph_from_edge_file(edge_file):
-    G = gt.Graph(directed=False)
-    vertex_map = {}
+# Increase the CSV field size limit
+csv.field_size_limit(sys.maxsize)
 
-    with open(edge_file, 'r') as f:
-        reader = csv.DictReader(f, delimiter=';')
+# Initialize the graph
+G = Graph(directed=False)
+node_map = {}
+
+# Step 1: Reading Nodes.csv
+print("Reading Nodes.csv...")
+start_time = time.time()
+
+with open('../output/Nodes.csv', 'r') as nodes_file:
+    reader = csv.DictReader(nodes_file, delimiter=';')
+    for row in reader:
+        try:
+            node_id = int(row['id'].strip())
+            v = G.add_vertex()
+            node_map[node_id] = v
+        except ValueError as e:
+            print(f"Skipping invalid node entry: {row} ({e})")
+
+print(f"Nodes loaded: {len(node_map)}")
+print(f"Time taken: {time.time() - start_time:.2f} seconds")
+
+# Step 2: Reading Links.csv
+print("Reading Links.csv...")
+start_time = time.time()
+edge_count = 0
+
+with open('../output/Links.csv', 'r') as links_file:
+    reader = csv.DictReader(links_file, delimiter=';')
+    for row in reader:
+        try:
+            source = int(row['source'].strip())
+            target = int(row['target'].strip())
+            if source in node_map and target in node_map:
+                G.add_edge(node_map[source], node_map[target])
+                edge_count += 1
+            else:
+                print(f"Skipping edge with missing nodes: {row}")
+        except ValueError as e:
+            print(f"Skipping invalid edge entry: {row} ({e})")
+
+print(f"Edges loaded: {edge_count}")
+print(f"Time taken: {time.time() - start_time:.2f} seconds")
+
+# Step 3: Calculating the layout positions (2D coordinates)
+print("Calculating node positions using SFDP layout...")
+start_time = time.time()
+
+pos = sfdp_layout(G)
+
+print("Node positions calculated.")
+print(f"Time taken: {time.time() - start_time:.2f} seconds")
+
+# Step 4: Writing NodeCoordinates.csv
+print("Writing NodeCoordinates.csv...")
+start_time = time.time()
+
+with open('../output/NodeCoordinates.csv', 'w', newline='') as coord_file:
+    fieldnames = ['id', 'title', 'out', 'x', 'y']
+    writer = csv.DictWriter(coord_file, fieldnames=fieldnames, delimiter=';')
+    writer.writeheader()
+
+    with open('../output/Nodes.csv', 'r') as nodes_file:
+        reader = csv.DictReader(nodes_file, delimiter=';')
         for row in reader:
-            source = int(row['source'])
-            target = int(row['target'])
+            try:
+                node_id = int(row['id'].strip())
+                v = node_map[node_id]
+                x, y = pos[v]
+                writer.writerow({
+                    'id': row['id'],
+                    'title': row['title'].strip(),
+                    'out': row['out'].strip(),
+                    'x': x,
+                    'y': y
+                })
+            except ValueError as e:
+                print(f"Skipping invalid node entry in output: {row} ({e})")
 
-            if source not in vertex_map:
-                vertex_map[source] = G.add_vertex()
-            if target not in vertex_map:
-                vertex_map[target] = G.add_vertex()
-
-            G.add_edge(vertex_map[source], vertex_map[target])
-    
-    return G, vertex_map
-
-def load_node_info(node_file):
-    node_info = {}
-    with open(node_file, 'r') as f:
-        reader = csv.DictReader(f, delimiter=';')
-        for row in reader:
-            node_id = int(row['id'])
-            title = row['title']
-            out = int(row['out'])
-            node_info[node_id] = {'title': title, 'out': out}
-    return node_info
-
-def main():
-    edge_file = '../output/Links.csv'  # Change this to your edge file path
-    node_file = '../output/Nodes.csv'  # Change this to your node file path
-    output_file = '../output/NodeCoordinates.csv'
-
-    print("Loading node information...")
-    node_info = load_node_info(node_file)
-
-    print("Loading graph from edge file...")
-    start_time = time.time()
-    G, vertex_map = load_graph_from_edge_file(edge_file)
-    print(f"Graph loaded in {time.time() - start_time:.2f} seconds.")
-    print(f"Number of nodes: {G.num_vertices()}, Number of edges: {G.num_edges()}")
-
-    print("Computing layout...")
-    start_time = time.time()
-    pos = gt.sfdp_layout(
-      G,
-      verbose = True,
-      C=0.1,
-      p=0.8,
-      K=0.5,
-      gamma=1.5,
-      epsilon=0.001,
-      theta=0.7,
-      max_iter=1500
-  )
-    print(f"Layout computed in {time.time() - start_time:.2f} seconds.")
-
-    print("Saving coordinates to file...")
-    with open(output_file, 'w') as f:
-        f.write("id;title;out;x;y\n")
-        for node_id, v in vertex_map.items():
-            x, y = pos[v]
-            info = node_info.get(node_id, {'title': 'Unknown', 'out': 0})
-            title = info['title']
-            out = info['out']
-            f.write(f"{node_id};{title};{out};{x};{y}\n")
-    print(f"Coordinates saved to {output_file}")
-
-if __name__ == "__main__":
-    main()
+print("NodeCoordinates.csv has been written.")
+print(f"Time taken: {time.time() - start_time:.2f} seconds")

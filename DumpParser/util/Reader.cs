@@ -4,18 +4,130 @@ using MySql.Data.MySqlClient;
 
 public static class Reader
 {
-  public static List<PageLink> LoadPageLinks(string connectionString)
+  // public static List<PageLink> LoadPageLinks(string connectionString)
+  // {
+  //   List<PageLink> pageLinks = new List<PageLink>();
+  //   int offset = 0;
+  //   int limit = 1000000;
+
+  //   using (MySqlConnection conn = new MySqlConnection(connectionString))
+  //   {
+  //     conn.Open();
+  //     while (true)
+  //     {
+  //       string query = $"SELECT pl_from, pl_from_namespace, pl_target_id FROM pagelinks WHERE pl_from_namespace = 0 ORDER BY pl_from ASC, pl_target_id ASC LIMIT {limit} OFFSET {offset}";
+
+  //       MySqlCommand cmd = new MySqlCommand(query, conn);
+
+  //       using (MySqlDataReader reader = cmd.ExecuteReader())
+  //       {
+  //         if (!reader.HasRows) break;
+
+  //         while (reader.Read())
+  //         {
+  //           PageLink link = new PageLink
+  //           {
+  //             pl_from = reader.GetUInt32("pl_from"),
+  //             pl_from_namespace = reader.GetInt32("pl_from_namespace"),
+  //             pl_target_id = reader.GetUInt64("pl_target_id")
+  //           };
+
+  //           pageLinks.Add(link);
+  //         }
+  //       }
+  //       offset += limit;
+  //     }
+  //   }
+
+  //   return pageLinks;
+  // }
+
+  // public static List<LinkTarget> LoadLinkTargets(string connectionString)
+  // {
+  //   List<LinkTarget> linkTargets = new List<LinkTarget>();
+  //   int offset = 0;
+  //   int limit = 1000000;
+
+  //   using (MySqlConnection conn = new MySqlConnection(connectionString))
+  //   {
+  //     conn.Open();
+  //     while (true)
+  //     {
+  //       string query = $"SELECT it_id, it_title FROM linktarget WHERE it_namespace = 0 ORDER BY it_id ASC LIMIT {limit} OFFSET {offset}";
+
+  //       MySqlCommand cmd = new MySqlCommand(query, conn);
+
+  //       using (MySqlDataReader reader = cmd.ExecuteReader())
+  //       {
+  //         if (!reader.HasRows) break;
+
+  //         while (reader.Read())
+  //         {
+  //           LinkTarget link = new LinkTarget
+  //           {
+  //             it_id = reader.GetUInt32("it_id"),
+  //             it_title = Encoding.UTF8.GetString((byte[])reader["it_title"])
+  //           };
+
+  //           linkTargets.Add(link);
+  //         }
+  //       }
+  //       offset += limit;
+  //     }
+  //   }
+
+  //   return linkTargets;
+  // }
+
+  // public static List<Page> LoadPages(string connectionString)
+  // {
+  //   List<Page> pages = new List<Page>();
+  //   int offset = 0;
+  //   int limit = 1000000;
+
+  //   using (MySqlConnection conn = new MySqlConnection(connectionString))
+  //   {
+  //     conn.Open();
+  //     while (true)
+  //     {
+  //       string query = $"SELECT page_id, page_title FROM page WHERE page_namespace = 0 AND page_is_redirect = 0 ORDER BY page_id ASC LIMIT {limit} OFFSET {offset}";
+
+  //       MySqlCommand cmd = new MySqlCommand(query, conn);
+
+  //       using (MySqlDataReader reader = cmd.ExecuteReader())
+  //       {
+  //         if (!reader.HasRows) break;
+
+  //         while (reader.Read())
+  //         {
+  //           Page page = new Page
+  //           {
+  //             page_id = reader.GetUInt32("page_id"),
+  //             page_title = Encoding.UTF8.GetString((byte[])reader["page_title"]),
+  //           };
+
+  //           pages.Add(page);
+  //         }
+  //       }
+  //       offset += limit;
+  //     }
+  //   }
+
+  //   return pages;
+  // }
+  public static void LoadPageLinks(string connectionString, Action<List<PageLink>> processChunk)
   {
-    List<PageLink> pageLinks = new List<PageLink>();
-    int offset = 0;
-    int limit = 1000000;
+    // int offset = 0;
+    int offset = 148288209;
+    int limit = 10000000;
 
     using (MySqlConnection conn = new MySqlConnection(connectionString))
     {
       conn.Open();
       while (true)
       {
-        string query = $"SELECT pl_from, pl_from_namespace, pl_target_id FROM pagelinks WHERE pl_from_namespace = 0 ORDER BY pl_from ASC, pl_target_id ASC LIMIT {limit} OFFSET {offset}";
+        List<PageLink> pageLinks = new List<PageLink>();
+        string query = $"SELECT pl_from, pl_from_namespace, pl_target_id FROM pagelinks WHERE pl_from_namespace = 0 LIMIT {limit} OFFSET {offset}";
 
         MySqlCommand cmd = new MySqlCommand(query, conn);
 
@@ -31,20 +143,17 @@ public static class Reader
               pl_from_namespace = reader.GetInt32("pl_from_namespace"),
               pl_target_id = reader.GetUInt64("pl_target_id")
             };
-
             pageLinks.Add(link);
           }
         }
+        processChunk(pageLinks);
         offset += limit;
       }
     }
-
-    return pageLinks;
   }
 
-  public static List<LinkTarget> LoadLinkTargets(string connectionString)
+  public static void LoadLinkTargets(string connectionString, Action<List<LinkTarget>> processChunk)
   {
-    List<LinkTarget> linkTargets = new List<LinkTarget>();
     int offset = 0;
     int limit = 1000000;
 
@@ -53,7 +162,8 @@ public static class Reader
       conn.Open();
       while (true)
       {
-        string query = $"SELECT it_id, it_title FROM linktarget WHERE it_namespace = 0 ORDER BY it_id ASC LIMIT {limit} OFFSET {offset}";
+        List<LinkTarget> linkTargets = new List<LinkTarget>();
+        string query = $"SELECT it_id, it_title FROM linktarget WHERE it_namespace = 0 LIMIT {limit} OFFSET {offset}";
 
         MySqlCommand cmd = new MySqlCommand(query, conn);
 
@@ -68,20 +178,17 @@ public static class Reader
               it_id = reader.GetUInt32("it_id"),
               it_title = Encoding.UTF8.GetString((byte[])reader["it_title"])
             };
-
             linkTargets.Add(link);
           }
         }
+        processChunk(linkTargets);
         offset += limit;
       }
     }
-
-    return linkTargets;
   }
 
-  public static List<Page> LoadPages(string connectionString)
+  public static void LoadPages(string connectionString, Action<List<Page>> processChunk)
   {
-    List<Page> pages = new List<Page>();
     int offset = 0;
     int limit = 1000000;
 
@@ -90,7 +197,8 @@ public static class Reader
       conn.Open();
       while (true)
       {
-        string query = $"SELECT page_id, page_title FROM page WHERE page_namespace = 0 AND page_is_redirect = 0 ORDER BY page_id ASC LIMIT {limit} OFFSET {offset}";
+        List<Page> pages = new List<Page>();
+        string query = $"SELECT page_id, page_title FROM page WHERE page_namespace = 0 AND page_is_redirect = 0 LIMIT {limit} OFFSET {offset}";
 
         MySqlCommand cmd = new MySqlCommand(query, conn);
 
@@ -105,15 +213,13 @@ public static class Reader
               page_id = reader.GetUInt32("page_id"),
               page_title = Encoding.UTF8.GetString((byte[])reader["page_title"]),
             };
-
             pages.Add(page);
           }
         }
+        processChunk(pages);
         offset += limit;
       }
     }
-
-    return pages;
   }
 
   public static List<string> LoadCategories(string connectionString)

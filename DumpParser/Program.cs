@@ -15,11 +15,10 @@ class Program
         SQLParser.ParseGraph(args[1]);
         break;
       case "parse_categories":
-        SQLParser.ParseCategoryVectors(args[1]);
+        SQLParser.ParseCategories(args[1]);
         break;
-      case "community_detection":
-        long startTime = DateTime.Now.Ticks;
-        GraphClustering.PerformCommunityDetection("output/NodeCoordinates.csv", "output/Links.csv");
+      case "analyze_communities":
+        SQLParser.AnalyzeCommunities(args[1]);
         break;
       default:
         break;
